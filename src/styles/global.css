@@ -2219,3 +2219,8 @@ html.ultra .fd-opt {
 .ft-bottom a {
   border-bottom: 1px solid var(--line);
 }
+.ft-credit {
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  color: var(--fg);
+}

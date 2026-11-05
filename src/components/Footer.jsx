@@ -83,7 +83,9 @@ export default function Footer() {
         ) : (
           <a href="/quatrea-ultra/">High-end GPU? Try the Ultra edition →</a>
         )}
-        <span>Design &amp; development concept · React · GSAP · WebGL</span>
+        <span>
+          Made by <strong className="ft-credit">SYED ZAIN PASHA</strong>
+        </span>
       </div>
     </footer>
   )
