@@ -1526,12 +1526,18 @@ html.has-cursor .cursor-ring {
   color: var(--accent);
 }
 
+/* pinned while in view: title on top, the next bottle (WebGL) sits below it */
 .fr-next {
-  min-height: 115vh;
+  height: 170vh;
+  text-align: center;
+}
+.nx-sticky {
+  position: sticky;
+  top: 0;
+  height: 100svh;
   display: flex;
   justify-content: center;
-  padding: 16vh var(--pad) 0;
-  text-align: center;
+  padding: 12vh var(--pad) 0;
 }
 .nx-link {
   display: grid;
@@ -1546,7 +1552,7 @@ html.has-cursor .cursor-ring {
   font-family: var(--serif);
   font-style: italic;
   font-weight: 300;
-  font-size: clamp(90px, 15vw, 270px);
+  font-size: clamp(60px, min(11vw, 19vh), 200px);
   line-height: 0.88;
   letter-spacing: -0.02em;
   transition: letter-spacing 1s var(--ease);
@@ -2183,4 +2189,33 @@ html.has-cursor .cursor-ring {
   .scroll-cue i::after {
     animation: none;
   }
+}
+
+/* ——— ultra edition: original frosted-glass blurs ——— */
+html.ultra {
+  --glass: color-mix(in srgb, var(--bg) 38%, transparent);
+}
+html.ultra .nav-bag {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+html.ultra .size {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+html.ultra .fd-opt {
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+.edition-badge {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--accent);
+}
+.ft-bottom a {
+  border-bottom: 1px solid var(--line);
 }

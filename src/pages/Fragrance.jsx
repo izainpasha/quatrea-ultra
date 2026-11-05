@@ -115,15 +115,19 @@ export default function Fragrance({ slug }) {
       })
       fadeUp('.buy-fade', { stagger: 0.07 })
 
-      // —— Next season: the next bottle rises from below
-      zone('.fr-next', () => {
-        setTheme(nextIdx)
-        setLayout(layouts.focus(nextIdx, 'center', { y: -0.62, s: 1.0, py: -0.55, ps: 1.2 }), { spin: 0.8 })
-      })
+      // —— Next season: pinned title with the next bottle rising into place below it
+      zone(
+        '.fr-next',
+        () => {
+          setTheme(nextIdx)
+          setLayout(layouts.focus(nextIdx, 'center', { y: -0.42, s: 0.92, py: -0.28, ps: 1.5 }), { spin: 0.8 })
+        },
+        { start: 'top 35%' }
+      )
       gsap.fromTo(
         '.nx-name',
         { yPercent: 40, opacity: 0.2 },
-        { yPercent: 0, opacity: 1, ease: 'none', scrollTrigger: { trigger: '.fr-next', start: 'top bottom', end: 'center center', scrub: true } }
+        { yPercent: 0, opacity: 1, ease: 'none', scrollTrigger: { trigger: '.fr-next', start: 'top bottom', end: 'top top', scrub: true } }
       )
       zone('.footer', () => setLayout(layouts.hidden(), { spin: 0.4 }))
 
@@ -286,11 +290,13 @@ export default function Fragrance({ slug }) {
 
       {/* NEXT */}
       <section className="fr-next">
-        <TLink to={`/fragrance/${next.slug}`} className="nx-link" data-cursor="Next">
-          <span className="eyebrow">Next season — {next.season}</span>
-          <span className="nx-name">{next.name}</span>
-          <span className="nx-tag">{next.tagline}</span>
-        </TLink>
+        <div className="nx-sticky">
+          <TLink to={`/fragrance/${next.slug}`} className="nx-link" data-cursor="Next">
+            <span className="eyebrow">Next season — {next.season}</span>
+            <span className="nx-name">{next.name}</span>
+            <span className="nx-tag">{next.tagline}</span>
+          </TLink>
+        </div>
       </section>
 
       <Footer />

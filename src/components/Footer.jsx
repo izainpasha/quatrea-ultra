@@ -3,6 +3,7 @@ import { gsap, useGSAP } from '../lib/gsap'
 import { TLink } from './Transition'
 import { Monogram } from './Logo'
 import { fragrances } from '../data/fragrances'
+import { EDITION } from '../lib/quality'
 
 export default function Footer() {
   const root = useRef(null)
@@ -77,6 +78,11 @@ export default function Footer() {
       </div>
       <div className="ft-bottom">
         <span>© 2026 Quatréa — a fictional maison de parfum.</span>
+        {EDITION === 'ultra' ? (
+          <a href="/quatrea/">Lighter standard edition →</a>
+        ) : (
+          <a href="/quatrea-ultra/">High-end GPU? Try the Ultra edition →</a>
+        )}
         <span>Design &amp; development concept · React · GSAP · WebGL</span>
       </div>
     </footer>

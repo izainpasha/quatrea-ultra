@@ -4,7 +4,10 @@
 //    software renderers get no WebGL at all).
 // 2. A runtime monitor watches the real browser frame rate and steps quality
 //    down if the machine struggles — so the page never starves the OS compositor.
-// Override for testing with ?quality=high | low | off
+// Override for testing with ?quality=high | low | off | ultra | 0–4
+//
+// The "ultra" edition (VITE_EDITION=ultra, deployed as quatrea-ultra) is the original
+// full-fidelity build for high-end PCs: level 4, locked, no frame cap.
 
 const LEVELS = [
   // 0 — survival mode
@@ -15,12 +18,18 @@ const LEVELS = [
   { dpr: 1, trans: 0.5, bg: 0.25, particles: 0.8, simpleGlass: false, dispersion: 0 },
   // 3 — default for dedicated GPUs
   { dpr: 1.5, trans: 0.75, bg: 0.33, particles: 1, simpleGlass: false, dispersion: 0.25 },
+  // 4 — ultra: the original uncompromised settings (full-res effects, strong dispersion)
+  { dpr: 1.75, trans: 1, bg: 1, particles: 1, simpleGlass: false, dispersion: 0.6 },
 ]
 
+export const EDITION = import.meta.env.VITE_EDITION === 'ultra' ? 'ultra' : 'standard'
+
 function detectTier() {
-  const forced = new URLSearchParams(location.search).get('quality')
+  let forced = new URLSearchParams(location.search).get('quality')
+  if (!forced && EDITION === 'ultra') forced = 'ultra'
+  if (forced === 'ultra') return { tier: 'high', renderer: 'ultra edition', level: 4, locked: true }
   if (forced === 'high' || forced === 'low' || forced === 'off') return { tier: forced, renderer: 'forced' }
-  if (/^[0-3]$/.test(forced || '')) return { tier: forced === '3' ? 'high' : 'low', renderer: 'forced', level: +forced, locked: true }
+  if (/^[0-4]$/.test(forced || '')) return { tier: +forced >= 3 ? 'high' : 'low', renderer: 'forced', level: +forced, locked: true }
   try {
     const c = document.createElement('canvas')
     const gl = c.getContext('webgl2') || c.getContext('webgl')
@@ -46,6 +55,7 @@ export const quality = {
   renderer: detected.renderer,
   level: startLevel,
   ...LEVELS[startLevel],
+  ultra: startLevel === 4,
   locked: !!detected.locked, // a forced numeric level disables auto-downgrade
   version: 0, // bumps whenever settings change, so consumers can react
 }

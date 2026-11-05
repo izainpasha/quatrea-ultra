@@ -47,7 +47,7 @@ function FrameDriver() {
       const now = performance.now()
       if (Math.abs(scene.velocity) > 0.05) lastInput = now
       const idle = now - lastInput > 2000
-      const fps = idle ? 30 : 60
+      const fps = quality.ultra ? Infinity : idle ? 30 : 60
       if (time - lastRender >= 1 / fps - 0.004) {
         lastRender = time
         advance(time)

@@ -2,7 +2,9 @@
 
 A scrollytelling website concept for **Quatréa**, a fictional maison de parfum with four fragrances, one for each season.
 
-**Live demo:** https://izainpasha.github.io/quatrea/
+**Live demo:** https://izainpasha.github.io/quatrea/ (adaptive quality, suits any machine)
+
+**Ultra edition:** https://izainpasha.github.io/quatrea-ultra/ (full-fidelity rendering for high-end GPUs)
 
 | N° | Fragrance | Season | Mood |
 |----|-----------|--------|------|
@@ -39,7 +41,19 @@ Rendering adapts to the visitor's hardware, so the page never takes over the mac
 - **Rendering is driven by the same GSAP ticker as Lenis**, so WebGL and the DOM update in the same frame. When the visitor is idle, it is capped at 30 fps.
 - **The silk background is rendered offscreen at about a quarter of the screen resolution** and then upscaled.
 
-To force a level for testing, use `?quality=high | low | off` or `?quality=0`–`3`.
+To force a level for testing, use `?quality=high | low | off | ultra` or `?quality=0`–`4`.
+
+### Two editions, one codebase
+
+The same code is pushed to two repos. `deploy.yml` reads the repository name:
+
+- **`quatrea`** builds the standard edition, with adaptive quality.
+- **`quatrea-ultra`** builds with `VITE_EDITION=ultra`, which turns on the original settings:
+  - up to 1.75× pixel density
+  - full-resolution refraction and background
+  - strong glass dispersion
+  - no frame cap and no auto-downgrade
+  - the custom cursor and frosted-glass blurs
 
 ## Stack
 

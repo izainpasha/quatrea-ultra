@@ -6,6 +6,7 @@ import { TLink } from './Transition'
 import { Monogram, Wordmark } from './Logo'
 import { useBag } from './Bag'
 import { fragrances } from '../data/fragrances'
+import { EDITION } from '../lib/quality'
 
 const LINKS = [
   { to: '/collection', label: 'Collection' },
@@ -64,6 +65,7 @@ export default function Nav() {
         <TLink to="/" className="nav-logo" data-cursor="Home" aria-label="Quatréa home">
           <Monogram size={30} stroke={4} />
           <Wordmark />
+          {EDITION === 'ultra' && <span className="edition-badge">Ultra</span>}
         </TLink>
         <nav className="nav-links" aria-label="Primary">
           {LINKS.map((l) => (
