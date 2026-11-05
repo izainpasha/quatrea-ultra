@@ -91,9 +91,9 @@ export default function Collection() {
         })
         gsap.fromTo(
           panel.querySelector('.hp-big'),
-          { xPercent: 20 },
+          { xPercent: 6 },
           {
-            xPercent: -20,
+            xPercent: -6,
             ease: 'none',
             scrollTrigger: { trigger: panel, containerAnimation: tween, start: 'left right', end: 'right left', scrub: true },
           }

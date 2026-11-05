@@ -1,5 +1,5 @@
-import { Component, Suspense } from 'react'
-import { Canvas, useFrame } from '@react-three/fiber'
+import { Component, Suspense, useEffect } from 'react'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Environment, Lightformer } from '@react-three/drei'
 import * as THREE from 'three'
 import Background from './Background'
@@ -7,6 +7,78 @@ import Particles from './Particles'
 import Bottle from './Bottle'
 import { fragrances } from '../data/fragrances'
 import { scene } from '../lib/scene'
+import { gsap } from '../lib/gsap'
+import { quality, setLevel } from '../lib/quality'
+
+/**
+ * Drives rendering manually from the GSAP ticker (the same rAF that moves Lenis and
+ * ScrollTrigger, so WebGL and DOM stay in sync) and:
+ *  - caps the frame rate to 30fps while the visitor is idle,
+ *  - watches the real frame rate and lowers quality if the GPU is struggling,
+ *    so the page never starves the OS (cursor, other apps) of GPU time.
+ */
+function FrameDriver() {
+  const advance = useThree((s) => s.advance)
+  const setDpr = useThree((s) => s.setDpr)
+  const gl = useThree((s) => s.gl)
+
+  useEffect(() => {
+    const apply = () => {
+      setDpr(quality.dpr)
+      gl.transmissionResolutionScale = quality.trans
+    }
+    apply()
+
+    let lastRender = 0
+    let lastInput = performance.now()
+    const poke = () => (lastInput = performance.now())
+    const opts = { passive: true }
+    window.addEventListener('pointermove', poke, opts)
+    window.addEventListener('wheel', poke, opts)
+    window.addEventListener('touchmove', poke, opts)
+    window.addEventListener('keydown', poke, opts)
+
+    // frame-time monitor (median of rAF intervals is robust to one-off hitches)
+    const deltas = []
+    let windowStart = performance.now()
+    let graceUntil = performance.now() + 5000
+
+    const tick = (time, deltaMs) => {
+      const now = performance.now()
+      if (Math.abs(scene.velocity) > 0.05) lastInput = now
+      const idle = now - lastInput > 2000
+      const fps = idle ? 30 : 60
+      if (time - lastRender >= 1 / fps - 0.004) {
+        lastRender = time
+        advance(time)
+      }
+
+      if (document.hidden) return
+      deltas.push(deltaMs)
+      if (now - windowStart > 2000) {
+        windowStart = now
+        if (now > graceUntil && deltas.length > 10) {
+          deltas.sort((a, b) => a - b)
+          const median = deltas[deltas.length >> 1]
+          if (median > 22 && setLevel(quality.level - 1)) {
+            apply()
+            graceUntil = now + 2500
+          }
+        }
+        deltas.length = 0
+      }
+    }
+    gsap.ticker.add(tick)
+    return () => {
+      gsap.ticker.remove(tick)
+      window.removeEventListener('pointermove', poke)
+      window.removeEventListener('wheel', poke)
+      window.removeEventListener('touchmove', poke)
+      window.removeEventListener('keydown', poke)
+    }
+  }, [advance, setDpr, gl])
+  return null
+}
 
 function Rig() {
   useFrame((state, dt) => {
@@ -51,11 +123,13 @@ class GLBoundary extends Component {
 }
 
 export default function Experience() {
+  if (quality.tier === 'off') return <div className="gl" aria-hidden="true"><div className="gl-fallback" /></div>
   return (
     <div className="gl" aria-hidden="true">
       <GLBoundary>
         <Canvas
-          dpr={[1, 1.5]}
+          dpr={quality.dpr}
+          frameloop="never"
           camera={{ fov: 30, position: [0, 0, 9], near: 0.1, far: 60 }}
           gl={{ antialias: true, powerPreference: 'high-performance', alpha: false }}
           onCreated={({ gl }) => {
@@ -76,6 +150,7 @@ export default function Experience() {
           </Suspense>
           <Particles />
           <Rig />
+          <FrameDriver />
         </Canvas>
       </GLBoundary>
     </div>

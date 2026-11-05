@@ -8,7 +8,7 @@
   --fg-soft: color-mix(in srgb, var(--fg) 66%, transparent);
   --fg-faint: color-mix(in srgb, var(--fg) 40%, transparent);
   --line: color-mix(in srgb, var(--fg) 20%, transparent);
-  --glass: color-mix(in srgb, var(--bg) 38%, transparent);
+  --glass: color-mix(in srgb, var(--bg) 62%, transparent);
   --serif: 'Cormorant Garamond', 'Cormorant', 'Times New Roman', serif;
   --sans: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --pad: clamp(20px, 4vw, 64px);
@@ -90,8 +90,8 @@ html.has-cursor * {
 .gl-fallback {
   position: absolute;
   inset: 0;
-  background: radial-gradient(120% 90% at 30% 20%, #f2d3d5, transparent 60%),
-    radial-gradient(100% 80% at 80% 80%, #d3c2a3, transparent 60%), var(--bg);
+  background: radial-gradient(120% 90% at 25% 15%, color-mix(in srgb, var(--accent) 35%, transparent), transparent 60%),
+    radial-gradient(100% 80% at 85% 85%, color-mix(in srgb, var(--accent) 25%, transparent), transparent 60%), var(--bg);
 }
 .page {
   position: relative;
@@ -404,8 +404,6 @@ html.has-cursor .cursor-ring {
   letter-spacing: 0.2em;
   text-transform: uppercase;
   background: var(--glass);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
 }
 .nav-count {
   display: inline-grid;
@@ -634,25 +632,6 @@ html.has-cursor .cursor-ring {
   position: relative;
   max-width: 540px;
   z-index: 2;
-}
-.ch-num {
-  position: absolute;
-  top: 50%;
-  margin-top: -0.5em;
-  font-family: var(--serif);
-  font-weight: 300;
-  font-size: 50vw;
-  line-height: 1;
-  color: transparent;
-  -webkit-text-stroke: 1px var(--line);
-  pointer-events: none;
-  user-select: none;
-}
-.chapter.text-left .ch-num {
-  right: 0;
-}
-.chapter.text-right .ch-num {
-  left: 0;
 }
 .ch-meta {
   display: flex;
@@ -1024,12 +1003,12 @@ html.has-cursor .cursor-ring {
 }
 .hp-big {
   position: absolute;
-  right: -2vw;
-  bottom: 4vh;
+  left: 2vw;
+  bottom: 3vh;
   font-family: var(--serif);
   font-style: italic;
   font-weight: 300;
-  font-size: 26vw;
+  font-size: 17vw;
   line-height: 1;
   white-space: nowrap;
   color: transparent;
@@ -1505,8 +1484,6 @@ html.has-cursor .cursor-ring {
   border-radius: 16px;
   transition: border-color 0.4s, background 0.4s, transform 0.5s var(--ease);
   background: var(--glass);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
 }
 .size span {
   font-family: var(--serif);
@@ -1800,8 +1777,6 @@ html.has-cursor .cursor-ring {
   font-family: var(--serif);
   font-size: clamp(22px, 2vw, 30px);
   background: var(--glass);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
   transition: border-color 0.5s, transform 0.6s var(--ease), background 0.5s;
 }
 .fd-opt:hover {
@@ -2055,16 +2030,6 @@ html.has-cursor .cursor-ring {
   .chapter.text-right .ch-content {
     margin-left: 0;
   }
-  .ch-num {
-    top: 30%;
-    font-size: 80vw;
-  }
-  .chapter.text-left .ch-num,
-  .chapter.text-right .ch-num {
-    left: 50%;
-    right: auto;
-    transform: translateX(-50%);
-  }
   .ch-intro {
     display: none;
   }
@@ -2094,12 +2059,11 @@ html.has-cursor .cursor-ring {
     padding-bottom: 96px;
   }
   .hp-big {
-    top: 12vh;
-    bottom: auto;
-    right: auto;
+    top: auto;
+    bottom: 40vh;
     left: 50%;
     transform: translateX(-50%);
-    font-size: 34vw;
+    font-size: 24vw;
   }
   .hp-notes {
     margin: 16px 0 20px;

@@ -2,6 +2,7 @@ import { useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { scene } from '../lib/scene'
+import { quality } from '../lib/quality'
 
 // One particle system per season: petals, sun motes, leaves, snow.
 const SYSTEMS = [
@@ -138,6 +139,7 @@ function System({ cfg, index }) {
     u.uSize.value = cfg.size * state.viewport.dpr * Math.min(1.2, state.size.height / 900)
     u.uOpacity.value = THREE.MathUtils.damp(u.uOpacity.value, scene.particles[index] ?? 0, 1.6, dt)
     ref.current.visible = u.uOpacity.value > 0.005
+    geometry.setDrawRange(0, Math.ceil(cfg.count * quality.particles))
   })
 
   return (

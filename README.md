@@ -28,6 +28,19 @@ A scrollytelling website concept for **Quatréa**, a fictional maison de parfum 
   - Scent Finder: a quiz where the WebGL scene reacts live to every answer.
   - A working bag drawer, saved in `localStorage`.
 
+## Performance
+
+Rendering adapts to the visitor's hardware, so the page never takes over the machine:
+
+- **GPU tier detection at startup.**
+  - Integrated and mobile GPUs (Intel Iris/UHD, Mali, Adreno and similar) start at a lighter quality level.
+  - Software renderers get a CSS fallback with no WebGL.
+- **Live frame-rate monitor.** If frames slow down, it lowers resolution, then the glass refraction quality, and finally switches to non-refractive glass.
+- **Rendering is driven by the same GSAP ticker as Lenis**, so WebGL and the DOM update in the same frame. When the visitor is idle, it is capped at 30 fps.
+- **The silk background is rendered offscreen at about a quarter of the screen resolution** and then upscaled.
+
+To force a level for testing, use `?quality=high | low | off` or `?quality=0`–`3`.
+
 ## Stack
 
 React 19 · React Router 7 · Three.js + @react-three/fiber + drei · GSAP 3 (ScrollTrigger, SplitText) · Lenis · Vite

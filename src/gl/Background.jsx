@@ -1,7 +1,8 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { scene } from '../lib/scene'
+import { quality } from '../lib/quality'
 
 const vertex = /* glsl */ `
   varying vec2 vUv;
@@ -95,47 +96,176 @@ const fragment = /* glsl */ `
     float v = smoothstep(1.3, 0.2, length(p * vec2(0.85, 1.15)));
     col *= mix(0.82, 1.0, v);
 
-    // film grain
+    gl_FragColor = vec4(col, 1.0);
+  }
+`
+
+// Cheap full-screen pass: upscale the low-res silk texture, draw the chapter
+// numeral (part of the background, so the glass bottles sit in front of it and
+// refract it), and add film grain.
+const composite = /* glsl */ `
+  precision highp float;
+  varying vec2 vUv;
+  uniform sampler2D tSilk;
+  uniform sampler2D tNum;
+  uniform vec4 uNumRect;   // x, y, w, h in screen UV
+  uniform vec2 uNumCell;   // atlas cell offset
+  uniform float uNumAlpha;
+  uniform vec3 uInk;
+  uniform float uTime;
+  void main() {
+    vec3 col = texture2D(tSilk, vUv).rgb;
+    vec2 q = (vUv - uNumRect.xy) / uNumRect.zw;
+    if (uNumAlpha > 0.001 && q.x > 0.0 && q.x < 1.0 && q.y > 0.0 && q.y < 1.0) {
+      float a = texture2D(tNum, (q + uNumCell) * 0.5).a;
+      col = mix(col, uInk, a * uNumAlpha);
+    }
     float g = fract(sin(dot(gl_FragCoord.xy + fract(uTime) * 91.7, vec2(12.9898, 78.233))) * 43758.5453);
     col += (g - 0.5) * 0.028;
-
     gl_FragColor = vec4(col, 1.0);
     #include <colorspace_fragment>
   }
 `
 
+// 2×2 atlas of outlined numerals 01–04 (white strokes, tinted in the shader)
+function drawNumerals(canvas) {
+  const ctx = canvas.getContext('2d')
+  const cw = canvas.width / 2
+  const ch = canvas.height / 2
+  ctx.clearRect(0, 0, canvas.width, canvas.height)
+  ctx.strokeStyle = '#fff'
+  ctx.lineWidth = 4
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.font = '300 470px "Cormorant Garamond", "Times New Roman", serif'
+  for (let i = 0; i < 4; i++) {
+    const x = (i % 2) * cw + cw / 2
+    const y = Math.floor(i / 2) * ch + ch / 2 + 20
+    ctx.strokeText('0' + (i + 1), x, y)
+  }
+}
+function numeralAtlas() {
+  const canvas = document.createElement('canvas')
+  canvas.width = 2048
+  canvas.height = 1024
+  drawNumerals(canvas)
+  const tex = new THREE.CanvasTexture(canvas)
+  tex.generateMipmaps = true
+  tex.minFilter = THREE.LinearMipmapLinearFilter
+  tex.anisotropy = 4
+  return tex
+}
+
 export default function Background() {
   const size = useThree((s) => s.size)
-  const material = useMemo(
-    () =>
-      new THREE.ShaderMaterial({
-        vertexShader: vertex,
-        fragmentShader: fragment,
-        depthWrite: false,
-        depthTest: false,
-        uniforms: {
-          uTime: { value: 0 },
-          uScroll: { value: 0 },
-          uRes: { value: new THREE.Vector2(1, 1) },
-          uMouse: { value: new THREE.Vector2() },
-          uA: { value: scene.palette.a.clone() },
-          uB: { value: scene.palette.b.clone() },
-          uC: { value: scene.palette.c.clone() },
-        },
-      }),
-    []
-  )
+  const { silk, silkScene, silkCam, target, material } = useMemo(() => {
+    // sRGB-encoded 8-bit target: no banding in the dark winter palette
+    const target = new THREE.WebGLRenderTarget(16, 16, {
+      depthBuffer: false,
+      generateMipmaps: false,
+      minFilter: THREE.LinearFilter,
+      magFilter: THREE.LinearFilter,
+    })
+    target.texture.colorSpace = THREE.SRGBColorSpace
+    const silk = new THREE.ShaderMaterial({
+      vertexShader: vertex,
+      fragmentShader: fragment,
+      depthWrite: false,
+      depthTest: false,
+      uniforms: {
+        uTime: { value: 0 },
+        uScroll: { value: 0 },
+        uRes: { value: new THREE.Vector2(1, 1) },
+        uMouse: { value: new THREE.Vector2() },
+        uA: { value: scene.palette.a.clone() },
+        uB: { value: scene.palette.b.clone() },
+        uC: { value: scene.palette.c.clone() },
+      },
+    })
+    const silkScene = new THREE.Scene()
+    const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), silk)
+    quad.frustumCulled = false
+    silkScene.add(quad)
+    const material = new THREE.ShaderMaterial({
+      vertexShader: vertex,
+      fragmentShader: composite,
+      depthWrite: false,
+      depthTest: false,
+      uniforms: {
+        tSilk: { value: target.texture },
+        tNum: { value: numeralAtlas() },
+        uNumRect: { value: new THREE.Vector4(0, 0, 1, 1) },
+        uNumCell: { value: new THREE.Vector2(0, 1) },
+        uNumAlpha: { value: 0 },
+        uInk: { value: scene.ink.clone() },
+        uTime: { value: 0 },
+      },
+    })
+    return { silk, silkScene, silkCam: new THREE.Camera(), target, material }
+  }, [])
+  const num = useRef({ shown: -1, alpha: 0 })
+
+  useEffect(() => () => target.dispose(), [target])
+
+  // redraw the numerals once the display font has loaded
+  useEffect(() => {
+    let alive = true
+    document.fonts
+      .load('300 400px "Cormorant Garamond"')
+      .catch(() => {})
+      .then(() => {
+        if (!alive) return
+        const tex = material.uniforms.tNum.value
+        drawNumerals(tex.image)
+        tex.needsUpdate = true
+      })
+    return () => {
+      alive = false
+    }
+  }, [material])
 
   useFrame((state, dt) => {
-    const u = material.uniforms
-    const k = 1 - Math.exp(-Math.min(dt, 0.05) * 2.2)
-    u.uTime.value += Math.min(dt, 0.05) * (1 + Math.min(Math.abs(scene.velocity), 80) * 0.04)
+    dt = Math.min(dt, 0.05)
+    const u = silk.uniforms
+    const k = 1 - Math.exp(-dt * 2.2)
+    u.uTime.value += dt * (1 + Math.min(Math.abs(scene.velocity), 80) * 0.04)
     u.uScroll.value = scene.scrollY
-    u.uRes.value.set(size.width, size.height)
     u.uMouse.value.lerp(scene.pointer, 0.04)
     u.uA.value.lerp(scene.palette.a, k)
     u.uB.value.lerp(scene.palette.b, k)
     u.uC.value.lerp(scene.palette.c, k)
+    const m = material.uniforms
+    m.uTime.value = u.uTime.value
+    m.uInk.value.lerp(scene.ink, k)
+
+    // chapter numeral: fade out, swap, fade back in
+    const n = scene.numeral
+    const v = num.current
+    if (n.on && n.index !== v.shown) {
+      v.alpha = THREE.MathUtils.damp(v.alpha, 0, 9, dt)
+      if (v.alpha < 0.02 || v.shown < 0) v.shown = n.index
+    } else v.alpha = THREE.MathUtils.damp(v.alpha, n.on ? 0.3 : 0, n.on ? 2.5 : 6, dt)
+    m.uNumAlpha.value = v.alpha
+    if (v.shown >= 0) {
+      m.uNumCell.value.set(v.shown % 2, 1 - Math.floor(v.shown / 2))
+      const portrait = size.width < size.height * 0.95
+      const w = portrait ? 1.5 : 0.95
+      const h = (w * size.width) / 2 / size.height // atlas cells are 2:1
+      const cx = portrait ? 0.5 : n.side === 'right' ? 0.71 : 0.29
+      const cy = (portrait ? 0.66 : 0.5) - (0.3 - 0.7 * n.p) * h * 0.6
+      m.uNumRect.value.set(cx - w / 2, cy - h / 2, w, h)
+    }
+
+    // render the silk at a fraction of the screen resolution
+    const w = Math.max(32, Math.round(size.width * quality.bg))
+    const h = Math.max(32, Math.round(size.height * quality.bg))
+    if (target.width !== w || target.height !== h) target.setSize(w, h)
+    u.uRes.value.set(w, h)
+    const gl = state.gl
+    const prev = gl.getRenderTarget()
+    gl.setRenderTarget(target)
+    gl.render(silkScene, silkCam)
+    gl.setRenderTarget(prev)
   })
 
   return (

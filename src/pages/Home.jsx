@@ -76,24 +76,22 @@ export default function Home() {
         zone(ch, () => {
           setTheme(i)
           setLayout(layouts.focus(i, side, { y: -0.04 }), { spin: 0 })
+          Object.assign(scene.numeral, { on: true, index: i, side })
         })
         ScrollTrigger.create({
           trigger: ch,
           start: 'top bottom',
           end: 'bottom top',
           onUpdate: (self) => {
-            if (scene.themeIndex === i) scene.bottles[i].ry = (self.progress - 0.5) * (side === 'right' ? -2.6 : 2.6)
+            if (scene.themeIndex !== i) return
+            scene.bottles[i].ry = (self.progress - 0.5) * (side === 'right' ? -2.6 : 2.6)
+            scene.numeral.p = self.progress
           },
         })
         const tl = gsap.timeline({ scrollTrigger: { trigger: ch, start: 'top 60%', once: true } })
         tl.from(ch.querySelectorAll('.ch-name .split-char'), { yPercent: 120, duration: 1.4, ease: 'expo.out', stagger: 0.045 })
           .from(ch.querySelectorAll('.ch-fade'), { opacity: 0, y: 30, duration: 1.1, stagger: 0.08 }, 0.15)
           .from(ch.querySelector('.ch-line'), { scaleX: 0, duration: 1.4, ease: 'expo.inOut' }, 0)
-        gsap.fromTo(
-          ch.querySelector('.ch-num'),
-          { yPercent: 30 },
-          { yPercent: -40, ease: 'none', scrollTrigger: { trigger: ch, start: 'top bottom', end: 'bottom top', scrub: true } }
-        )
       })
 
       // —— Lineup
@@ -173,9 +171,6 @@ export default function Home() {
       {fragrances.map((f, i) => (
         <section className={`chapter ${i % 2 === 0 ? 'text-left' : 'text-right'}`} key={f.slug}>
           <div className="ch-sticky">
-            <span className="ch-num" aria-hidden="true">
-              {f.no}
-            </span>
             <div className="ch-content">
               <div className="ch-meta ch-fade">
                 <span className="eyebrow">

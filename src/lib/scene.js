@@ -12,6 +12,9 @@ export const scene = {
     b: new THREE.Color(neutralTheme.b),
     c: new THREE.Color(neutralTheme.c),
   },
+  ink: new THREE.Color(neutralTheme.fg),
+  // chapter numeral drawn inside the WebGL background (behind the bottles)
+  numeral: { on: false, index: 0, side: 'right', p: 0.5 },
   particles: [0, 0.35, 0, 0],
   bottles: [0, 1, 2, 3].map(OFF),
   hover: -1,
@@ -33,6 +36,7 @@ export function setTheme(idx, particles) {
   scene.palette.a.set(t.a)
   scene.palette.b.set(t.b)
   scene.palette.c.set(t.c)
+  scene.ink.set(t.fg)
   scene.particles = particles || (idx < 0 ? [0, 0.35, 0, 0] : [0, 1, 2, 3].map((i) => (i === idx ? 1 : 0)))
   scene.themeIndex = idx
   if (current === idx) return
@@ -98,4 +102,5 @@ export function setLayout(arr, opts = {}) {
   scene.spin = opts.spin ?? 1
   scene.orbit = opts.orbit ?? 0
   scene.hover = -1
+  scene.numeral.on = false
 }

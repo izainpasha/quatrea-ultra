@@ -1,12 +1,15 @@
 import { useEffect, useRef } from 'react'
 import { gsap } from '../lib/gsap'
+import { quality } from '../lib/quality'
 
 export default function Cursor() {
   const dot = useRef(null)
   const ring = useRef(null)
   const label = useRef(null)
   useEffect(() => {
-    if (window.matchMedia('(pointer: coarse)').matches) return
+    // The custom cursor follows the page's frame rate; on integrated GPUs keep the
+    // native OS cursor so input never feels laggy.
+    if (window.matchMedia('(pointer: coarse)').matches || quality.tier !== 'high') return
     document.documentElement.classList.add('has-cursor')
     const xd = gsap.quickTo(dot.current, 'x', { duration: 0.12, ease: 'power3' })
     const yd = gsap.quickTo(dot.current, 'y', { duration: 0.12, ease: 'power3' })

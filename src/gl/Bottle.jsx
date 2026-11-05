@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber'
 import { RoundedBox } from '@react-three/drei'
 import * as THREE from 'three'
 import { scene } from '../lib/scene'
+import { quality } from '../lib/quality'
 
 const { damp } = THREE.MathUtils
 const TAU = Math.PI * 2
@@ -151,15 +152,28 @@ export default function Bottle({ index, f }) {
         attenuationDistance: 2.4,
         specularIntensity: 1,
         envMapIntensity: 1.25,
-        dispersion: 0.6,
+        dispersion: 0,
       }),
     [f]
   )
+  const glassVersion = useRef(-1)
 
   useFrame((state, dt) => {
     dt = Math.min(dt, 0.05)
     const g = group.current
     if (!g) return
+
+    // follow the adaptive quality level
+    if (glassVersion.current !== quality.version) {
+      glassVersion.current = quality.version
+      const simple = quality.simpleGlass
+      glass.transmission = simple ? 0 : 1 // crossing 0 recompiles the program
+      glass.transparent = simple
+      glass.opacity = simple ? 0.5 : 1
+      glass.color.set(simple ? f.theme.glass : '#ffffff')
+      glass.dispersion = simple ? 0 : quality.dispersion
+      glass.needsUpdate = true
+    }
     const v = c.current
     const t = scene.bottles[index]
     const vp = state.viewport
@@ -201,7 +215,12 @@ export default function Bottle({ index, f }) {
     g.position.set(v.x, v.y + float, v.z)
     g.scale.setScalar(Math.max(v.s, 0.0001))
     g.rotation.set(-scene.pointer.y * 0.12, v.ry + v.spin + scene.pointer.x * 0.22, v.rz)
-    if (liquid.current) liquid.current.scale.y = Math.max(0.001, v.fill)
+    if (liquid.current) {
+      // without refraction the thick glass no longer "magnifies" the liquid — fake it
+      const simple = quality.simpleGlass
+      liquid.current.scale.set(simple ? 1.24 : 1, Math.max(0.001, v.fill) * (simple ? 1.24 : 1), simple ? 1.24 : 1)
+      liquid.current.position.y = -H / 2 + (simple ? 0.1 : 0.24)
+    }
 
     g.visible = v.y > -vp.height * 0.5 - 2.4 * v.s && Math.abs(v.x) < vp.width * 0.5 + 1.6 * v.s
   })
